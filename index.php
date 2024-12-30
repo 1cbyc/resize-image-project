@@ -1,25 +1,43 @@
 <?php
-// Load the image
-$image = imagecreatefromjpeg("example.jpg"); // Replace "example.jpg" with the name of your image file
+include 'config.php';
+include 'src/resize.php';
 
-// Get the dimensions of the image
-$width = imagesx($image);
-$height = imagesy($image);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $uploadFile = $_FILES['image'];
+    $newWidth = (int)$_POST['width'];
+    $newHeight = (int)$_POST['height'];
 
-// Calculate the new dimensions
-$newWidth = $width * 0.5; // Change this to the new width you want
-$newHeight = $height * 0.5; // Change this to the new height you want
+    $uploadPath = UPLOAD_DIR . basename($uploadFile['name']);
+    move_uploaded_file($uploadFile['tmp_name'], $uploadPath);
 
-// Create a new image with the new dimensions
-$newImage = imagecreatetruecolor($newWidth, $newHeight);
+    $outputPath = OUTPUT_DIR . 'resized_' . basename($uploadFile['name']);
+    
+    try {
+        resize_image($uploadPath, $outputPath, $newWidth, $newHeight);
+        echo "Image successfully resized. <a href='$outputPath'>View Image</a>";
+    } catch (Exception $e) {
+        echo 'Error: ' . $e->getMessage();
+    }
+}
 
-// Resize the image
-imagecopyresized($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-
-// Save the resized image
-imagejpeg($newImage, "resized.jpg"); // Replace "resized.jpg" with the name of the resized image file
-
-// Free up memory
-imagedestroy($image);
-imagedestroy($newImage);
 ?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Resizer</title>
+</head>
+<body>
+    <h1>Resize Your Image</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <label for="image">Select an image:</label>
+        <input type="file" name="image" id="image" required><br><br>
+        <label for="width">New Width:</label>
+        <input type="number" name="width" required><br><br>
+        <label for="height">New Height:</label>
+        <input type="number" name="height" required><br><br>
+        <input type="submit" value="Resize Image">
+    </form>
+</body>
+</html>
